@@ -21,13 +21,13 @@ void coutChangedData(Element* element)
 	std::cout << std::endl;
 }
 
-void pltTSDensity2File(Element* element, int time)
+void pltTSDensity2File(Element* element, int time)//输出一个文件，供Unity使用
 {
 	char tempChar[15];
 	sprintf_s(tempChar, "%d", time);
 	string timeString = tempChar;
 
-	ofstream fileDensity(".\\out\\Density"+timeString+".txt", ios_base::app);// ios_base::app表示如果有这个文件则在文件尾追加 如果没有则创建
+	ofstream fileDensity(".\\out\\Density" + timeString + ".txt", ios_base::app);// ios_base::app表示如果有这个文件则在文件尾追加 如果没有则创建
 
 	for (int i = 0; i < N - 1; i++)
 	{
@@ -49,7 +49,7 @@ void pltTSDensity2File2(Element* element, double t)
 
 	for (int i = 0; i < N1; i++)
 	{
-		fileDensity1 << i<<" "<<element[i].density << endl;
+		fileDensity1 << i << " " << element[i].density << endl;
 	}
 
 	fileDensity1.close();
@@ -78,15 +78,15 @@ void pltTSDensity2File2(Element* element, double t)
 
 }
 
-void pltTSDensity2File3(Element* element, double t)
+void pltTSDensity2File3(Element* element, double t)//每条路输出一个文件，已做车道平均
 {
 
 	ofstream fileDensity1(".\\out\\densityRoad1.plt", ios_base::app);// ios_base::app表示如果有这个文件则在文件尾追加 如果没有则创建
 
-	fileDensity1 << "          zone t=    \""<<t<<"\"" << endl;
+	fileDensity1 << "          zone t=    \"" << t << "\"" << endl;
 	for (int i = 0; i < N1; i++)
 	{
-		fileDensity1 << i << " " << element[i].density << endl;
+		fileDensity1 << i << " " << element[i].density / element[i].laneN << endl;
 	}
 	fileDensity1.close();
 
@@ -95,7 +95,7 @@ void pltTSDensity2File3(Element* element, double t)
 	fileDensity2 << "          zone t=    \"" << t << "\"" << endl;
 	for (int i = N1; i < N1 + N2; i++)
 	{
-		fileDensity2 << i - N1 << " " << element[i].density << endl;
+		fileDensity2 << i - N1 << " " << element[i].density / element[i].laneN << endl;
 	}
 	fileDensity2.close();
 
@@ -103,7 +103,7 @@ void pltTSDensity2File3(Element* element, double t)
 	fileDensity3 << "          zone t=    \"" << t << "\"" << endl;
 	for (int i = N1 + N2; i < N; i++)
 	{
-		fileDensity3 << i - N1 - N2 << " " << element[i].density << endl;
+		fileDensity3 << i - N1 - N2 << " " << element[i].density / element[i].laneN << endl;
 	}
 	fileDensity3.close();
 }
@@ -114,7 +114,7 @@ void pltGridPosition2File(Element* element)
 
 	for (int i = 0; i < N; i++)
 	{
-		fileGrid << element[i].getValueX() << " "<<element[i].getValueY() << endl;
+		fileGrid << element[i].getValueX() << " " << element[i].getValueY() << endl;
 	}
 	//fileGrid << element[N - 1].getValueX() << "," << element[N - 1].getValueY() << "," << 0.0 << endl;
 

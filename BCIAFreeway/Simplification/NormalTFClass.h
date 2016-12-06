@@ -5,6 +5,10 @@ public:
 	Element();
 	Element(double, double);
 	double density, velocity, flowIn, flux;
+	double omega;
+	double rampIn, rampOut;
+	double laneN;
+	~Element();
 	void initialization(double a)
 	{
 		density = a;
