@@ -334,6 +334,58 @@ void updateElement(Element *element, double t)
 	}
 }
 
+//非齐次边界条件
+double CFL_Det_t_ST(Element* element)
+{
+	double dt = 100;// CFL_Det_t(element);
+	for (int i = 0; i < N; i++)
+	{
+		double density1 = 0, density2 = element[i].density, density3 = 0;
+		if (element[i].flag == 0)//进口
+		{
+			density1 = element[i].density;
+			density3 = element[element[i].EOut[0]].density;
+		}
+		else if (element[i].flag == 1)//出口
+		{
+			density1 = element[i - 1].density;
+			density3 = element[i].density;
+		}
+		else if (element[i].flag == 2)//交叉口前网格
+		{
+			density1 = element[i - 1].density;
+			density3 = (densityJam + sqrt(densityJam*densityJam - 4 * element[i].flux*densityJam / vMax)) / 2;
+		}
+		else if (element[i].flag == 3)//交叉口后网格
+		{
+			density1 = (densityJam - sqrt(densityJam*densityJam - 4 * element[i].flowIn*densityJam / vMax)) / 2;
+			density3 = element[element[i].EOut[0]].density;
+		}
+		else//其他正常网格
+		{
+			density1 = element[i - 1].density;
+			density3 = element[element[i].EOut[0]].density;
+		}
+		double Min = std::min(std::min(density1, density2), density3);
+		double Max = std::max(std::max(density1, density2), density3);
+
+		if (element[i].rampIn<element[i].rampOut)
+		{
+			if (dt > fabs(-Min / (element[i].rampIn - element[i].rampOut)))
+				dt = fabs(-Min / (element[i].rampIn - element[i].rampOut));
+		}
+		else if (element[i].rampIn > element[i].rampOut)
+		{
+			if (dt > fabs((densityJam - Max) / (element[i].rampIn - element[i].rampOut)))
+				dt = fabs((densityJam - Max) / (element[i].rampIn - element[i].rampOut));
+		}
+		else
+		{
+			dt = 0.1;
+		}
+	}
+	return dt;
+}
 //齐次方程CFL条件
 double CFL_Det_t(Element* element)
 {

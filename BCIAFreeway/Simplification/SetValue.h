@@ -59,6 +59,7 @@ double flow(double);//流量密度函数
 double demand(double);//需求函数
 double supply(double);//供给函数
 double CFL_Det_t(Element*);//齐次方程CFL条件
+double CFL_Det_t_ST(Element*);//非齐次方程CFL条件
 double CFL_Det_t_yzd(Element*);//yzd自拟定CFL条件
 double intOmega(double);
 
