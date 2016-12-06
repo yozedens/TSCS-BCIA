@@ -223,7 +223,7 @@ void updateFlux(Element *element)
 		{
 			element[i].flux = FGLaneN(element[i].density, element[element[i].EOut[0]].density, element[i].laneN);//Godunov数值流通量
 			element[element[i].EOut[0]].flowIn = element[i].flux;
-			element[i].flowIn = FGLaneN(element[i].density, element[i].density, element[i].laneN);//自然边界条件的Godunov数值流通量
+			element[i].flowIn = FGLaneN(boundryDensity*element[i].laneN, element[i].density, element[i].laneN);//固定边界条件的Godunov数值流通量
 		}
 		else if (element[i].flag == 1)//出口边界网格
 		{
@@ -328,7 +328,7 @@ void updateElement(Element *element, double t)
 		element[874].flux = 0;
 		element[875].flowIn = 0;
 	}
-	for (int i = 1; i < N; i++)
+	for (int i = 0; i < N; i++)
 	{
 		element[i].density = element[i].density + det_t / Det_x*(element[i].flowIn - element[i].flux) + det_t*(element[i].rampIn - element[i].rampOut);
 	}

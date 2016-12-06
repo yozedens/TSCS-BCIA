@@ -1,2 +1,4 @@
 [2016/12/6] 更改：complete the LWR Model with discontinuous flux and function b(x,t) which to control the flux in toll station
 [2016/12/6] 更改: add CFL condition for having ST
+[2016/12/6] boundry condition
+[2016/12/6] updateElement()::for(int i=0;;)

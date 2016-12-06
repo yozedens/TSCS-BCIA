@@ -44,6 +44,7 @@ const double densityJam = 0.16;//最大密度
 const double densityCr = densityJam / 2.0;//临界密度
 const double flowCr = vMax*densityJam / 4.0;//最大流量
 const double RateFlowDiverge = 0.4;//分岔口分流比率
+const double boundryDensity = 0.4*densityJam;//进口处固定密度
 
 const int NI = 12;//单边入口数目
 const int NO = 10;//单边出口数目
