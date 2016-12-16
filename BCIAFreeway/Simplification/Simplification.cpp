@@ -20,8 +20,8 @@ int main()
 	system("pause");
 	*/
 	int timeInt = time(0);
-	//	pltTSDensity2File(element, timeInt);
-	pltTSDensity2File3(element, 0);
+ 	pltTSDensity2File(element, timeInt);
+//	pltTSDensity2File3(element, 0);
 	//	pltGridPosition2File(element);
 	//	pltGridPosition2FileforUnity(element);
 	updateEIO(element);
@@ -35,8 +35,8 @@ int main()
 		//		coutChangedData(element);
 		//		if (count % 10 == 0)
 		{
-			//			pltTSDensity2File(element, timeInt);
-			pltTSDensity2File3(element, t);
+			pltTSDensity2File(element, timeInt);
+//			pltTSDensity2File3(element, t);
 		}
 		count++;
 	}

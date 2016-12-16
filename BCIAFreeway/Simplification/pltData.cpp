@@ -31,9 +31,9 @@ void pltTSDensity2File(Element* element, int time)//输出一个文件，供Unity使用
 
 	for (int i = 0; i < N - 1; i++)
 	{
-		fileDensity << element[i].density << ",";
+		fileDensity << element[i].density / element[i].laneN << ",";
 	}
-	fileDensity << element[N - 1].density << endl;
+	fileDensity << element[N - 1].density / element[N - 1].laneN << endl;
 	fileDensity.close();
 
 }
@@ -49,7 +49,7 @@ void pltTSDensity2File2(Element* element, double t)
 
 	for (int i = 0; i < N1; i++)
 	{
-		fileDensity1 << i << " " << element[i].density << endl;
+		fileDensity1 << i << " " << element[i].density / element[i].laneN << endl;
 	}
 
 	fileDensity1.close();
@@ -60,7 +60,7 @@ void pltTSDensity2File2(Element* element, double t)
 
 	for (int i = N1; i < N1 + N2; i++)
 	{
-		fileDensity2 << i - N1 << " " << element[i].density << endl;
+		fileDensity2 << i - N1 << " " << element[i].density / element[i].laneN << endl;
 	}
 
 	fileDensity2.close();
@@ -71,7 +71,7 @@ void pltTSDensity2File2(Element* element, double t)
 
 	for (int i = N1 + N2; i < N; i++)
 	{
-		fileDensity3 << i - N1 - N2 << " " << element[i].density << endl;
+		fileDensity3 << i - N1 - N2 << " " << element[i].density / element[i].laneN << endl;
 	}
 
 	fileDensity3.close();
