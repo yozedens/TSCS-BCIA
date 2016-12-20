@@ -10,8 +10,8 @@ int main()
 {
 	Element element[N];
 	ini(element);
+
 	double t = 0;
-	int count = 1;
 
 	/*	ofstream fileGt(".\\out\\gt.plt");
 	for (double tt = 0; tt < T; tt += 1)
@@ -20,10 +20,10 @@ int main()
 	system("pause");
 	*/
 	int timeInt = time(0);
- 	pltTSDensity2File(element, timeInt);
-//	pltTSDensity2File3(element, 0);
-	//	pltGridPosition2File(element);
-	//	pltGridPosition2FileforUnity(element);
+	pltTSDensity2FileforUnity(element, timeInt);
+	pltTSDensity2FileforTecplot(element, timeInt, 0);
+//	pltGridPosition2File(element);
+//	pltGridPosition2FileforUnity(element);
 	updateEIO(element);
 
 	while (t < T)
@@ -35,13 +35,32 @@ int main()
 		//		coutChangedData(element);
 		//		if (count % 10 == 0)
 		{
-			pltTSDensity2File(element, timeInt);
-//			pltTSDensity2File3(element, t);
+			pltTSDensity2FileforUnity(element, timeInt);
+			pltTSDensity2FileforTecplot(element, timeInt, t);
 		}
-		count++;
 	}
 
-	cout << count << " lines!\n";
+	Element elementDown[N];
+	timeInt = time(0);
+	t = 0;
+	ini(elementDown, 1);
+	pltTSDensity2FileforUnity(elementDown, timeInt);
+	pltTSDensity2FileforTecplot(elementDown, timeInt, 0);
+	updateEIO(elementDown, 1);
+
+	while (t < T)
+	{
+		t += det_t;
+		//		if(count%10==0)
+		std::cout << "t= " << t << ":" << element[N1 - 1].flux << "  " << element[N1].flowIn << " " << element[N1 + N2].flowIn << std::endl;
+		updateElement(elementDown, t, 1);
+		//		coutChangedData(element);
+		//		if (count % 10 == 0)
+		{
+			pltTSDensity2FileforUnity(elementDown, timeInt);
+			pltTSDensity2FileforTecplot(elementDown, timeInt, t);
+		}
+	}
 	system("pause");
 	return 0;
 }

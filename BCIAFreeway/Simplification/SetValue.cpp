@@ -1,63 +1,6 @@
 #include"SetValue.h"
 #include<algorithm>
 
-//速密关系函数
-double V(double u)
-{
-	return vMax*(1 - u / densityJam);
-}
-
-double ve(double u)
-{
-	return vMax*(1 / (1 + exp((u / densityJam - 0.25) / 0.06)) - 3.72e-6);
-}
-
-double intOmega(double u)
-{
-	return (1 - ve(u) / vMax)*densityJam;
-}
-
-//流量密度函数
-double flow(double u)
-{
-	return u*V(u);
-}
-
-//Riemann需求函数
-double demand(double u)
-{
-	return u > densityCr ? flowCr : flow(u);
-}
-
-//Riemann供给函数
-double supply(double u)
-{
-	return u < densityCr ? flowCr : flow(u);
-}
-
-//Godunov数值流通量
-double FGodunov(double ul, double ur)
-{
-	if (ul < densityCr)
-	{
-		if (ur <= densityCr)
-			return flow(ul);
-		else
-		{
-			if ((flow(ur) - flow(ul))*(ur - ul) >= 0)
-				return flow(ul);
-			else
-				return flow(ur);
-		}
-	}
-	else
-	{
-		if (ur>densityCr)
-			return flow(ur);
-		else
-			return flowCr;
-	}
-}
 
 double veLaneN(double rho, int n)
 {
@@ -67,6 +10,11 @@ double veLaneN(double rho, int n)
 double VLaneN(double rho, int n)
 {
 	return vMax*(1 - rho / (n*densityJam));
+}
+
+double iniOmega(double u, int n)
+{
+	return (1 - veLaneN(u, n) / vMax)*densityJam*n;
 }
 
 double flowLaneN(double rho, int n)
@@ -122,12 +70,15 @@ void trans(double &x, double &y, double alpha)
 }
 
 //全局初始化函数
-void ini(Element* element)
+void ini(Element* element, int UorD)
 {
 	//特殊车道数赋值
 	for (int i = 866; i < 881; i++)
 	{
-		element[i].laneN = 8;
+		if (UorD)
+			element[i].laneN = 5;
+		else
+			element[i].laneN = 8;
 	}
 
 	//密度初值
@@ -135,10 +86,10 @@ void ini(Element* element)
 	{
 		if (i < N1)
 			element[i].initialization(0.2*densityJam*element[i].laneN);//Road1初值
-		else if (i < N1 + N2)
+		else if (i < N)
 			element[i].initialization(0.2*densityJam*element[i].laneN);//Road2初值
-		else
-			element[i].initialization(0.2*densityJam*element[i].laneN);//Road3初值
+
+		element[i].omega = iniOmega(element[i].density, element[i].laneN);
 
 		element[i].setValueXY(Det_x / 2 + Det_x*i, 0);
 
@@ -159,11 +110,6 @@ void ini(Element* element)
 	double x5 = Length22*cos(alpha4) + x4;//拐角5坐标x
 	double y5 = Length22*sin(alpha4) + y4;//拐角5坐标y
 
-	double x6 = Length31*cos(alpha5) + x3;//拐角6坐标x
-	double y6 = Length31*sin(alpha5) + y3;//拐角6坐标y
-
-	double x7 = Length32*cos(alpha6) + x6;//拐角7坐标x
-	double y7 = Length32*sin(alpha6) + y6;//拐角7坐标y
 
 	double x0;
 	for (int i = N11; i < N; i++)//旋转改变网格中心位置
@@ -183,34 +129,23 @@ void ini(Element* element)
 			x0 = element[i].getValueX() - Length1;
 			element[i].setValueXY(x0*cos(alpha3) + x3, x0*sin(alpha3) + y3);
 		}
-		else if (i < N1 + N2)
+		else if (i < N)
 		{
 			x0 = element[i].getValueX() - (Length1 + Length21);
 			element[i].setValueXY(x0*cos(alpha4) + x4, x0*sin(alpha4) + y4);
 		}
-		else if (i < N1 + N2 + N31)
-		{
-			x0 = element[i].getValueX() - (Length1 + Length2);
-			element[i].setValueXY(x0*cos(alpha5) + x3, x0*sin(alpha5) + y3);
-		}
-		else if (i < N1 + N2 + N31 + N32)
-		{
-			x0 = element[i].getValueX() - (Length1 + Length2 + Length31);
-			element[i].setValueXY(x0*cos(alpha6) + x6, x0*sin(alpha6) + y6);
-		}
-		else if (i < N)
-		{
-			x0 = element[i].getValueX() - (Length1 + Length2 + Length31 + Length32);
-			element[i].setValueXY(x0*cos(alpha7) + x7, x0*sin(alpha7) + y7);
-		}
 	}
-	//特殊flag赋值
-	element[0].flag = 0;//进口
-	element[N1 + N2 - 1].flag = 1;//出口
-	element[N - 1].flag = 1;//出口
-	element[N1 - 1].flag = 2;//分岔口前网格
-	element[N1].flag = 3;//分岔口后网格
-	element[N1 + N2].flag = 3;//分岔口后网格
+	//特殊flag赋值，缺省值为10
+	if (UorD)
+	{
+		element[N - 1].flag = 0;//进口
+		element[0].flag = 1;//出口
+	}
+	else
+	{
+		element[0].flag = 0;//进口
+		element[N - 1].flag = 1;//出口
+	}
 
 }
 
@@ -249,24 +184,26 @@ void updateFlux(Element *element)
 	}
 }
 
-//上下游网格更新函数
-void updateEIO(Element* element)
+//下游网格更新函数
+void updateEIO(Element* element, int UorD)
 {
 	for (int i = 0; i < N; i++)
 	{
-		if (i == N1 - 1)
-		{
-			element[i].EOut[0] = N1;
-			element[i].EOut[1] = N1 + N2;
-		}
-		else if (i == N1 + N2 - 1 || i == N - 1)
+		if (element[i].flag==1)
 		{
 			element[i].EOut[0] = -1;
 			element[i].EOut[1] = -1;
 		}
 		else
 		{
-			element[i].EOut[0] = i + 1;
+			if (UorD)//为优化运算速度，此处判断可改为一次性判断，移至外层
+			{
+				element[i].EOut[0] = i - 1;	
+			}
+			else
+			{
+				element[i].EOut[0] = i + 1;
+			}
 			element[i].EOut[1] = -1;
 		}
 	}
@@ -295,26 +232,26 @@ double cal_g(double t)
 }
 
 //流入流出更改函数，模拟匝道io
-void updateST(Element* element, double t)//改成右端项,移项合并而来
+void updateST(Element* element, double t, int UorD)//改成右端项,移项合并而来
 {
 	for (int i = 0; i < NI; i++)
 	{
-		int iNE = int(NIx[i] / Det_x);
+		int iNE = int(NIx[i] / Det_x)*(1 - UorD) + int(NIDx[i] / Det_x)*UorD;
 		element[iNE].rampIn = cal_g(t)*0.2*densityJam*element[i].laneN*(1 - element[i].density / (densityJam*element[i].laneN));
 	}
 	for (int i = 0; i < NO; i++)
 	{
-		int oNE = int(NOx[i] / Det_x);
+		int oNE = int(NOx[i] / Det_x)*(1 - UorD) + int(NODx[i] / Det_x)*UorD;
 		element[oNE].rampOut = 0.1*element[oNE].flux / Det_x;//+= cal_g(t-15)*0.2*densityJam*element[i].density / densityJam*Det_x*Det_x;
 	}
 }
 
 //网格密度更新函数
 double det_t;
-void updateElement(Element *element, double t)
+void updateElement(Element *element, double t, int UorD)
 {
 	updateFlux(element);//更新流量
-	updateST(element, t);//更新源项
+	updateST(element, t, UorD);//更新源项
 
 	det_t = 1;//CFL_Det_t(element);//根据CFL条件求最大允许时间步
 	if (!det_t)
@@ -324,9 +261,8 @@ void updateElement(Element *element, double t)
 	}
 	if (t - 5 * floor(t / 5.0) <= 1)//时间函数，使收费站处流量强行为0
 	{
-		printf("%f\n", t);
-		element[874].flux = 0;
-		element[875].flowIn = 0;
+		Fb(element, UorD);
+//		printf("%f\n", t);		
 	}
 	for (int i = 0; i < N; i++)
 	{
@@ -334,6 +270,19 @@ void updateElement(Element *element, double t)
 	}
 }
 
+void Fb(Element* element, int UorD)//特殊流量控制
+{
+	if (UorD)
+	{
+		element[875].flux = 0;
+		element[874].flowIn = 0;
+	}
+	else
+	{
+		element[874].flux = 0;
+		element[875].flowIn = 0;
+	}
+}
 //非齐次边界条件
 double CFL_Det_t_ST(Element* element)
 {

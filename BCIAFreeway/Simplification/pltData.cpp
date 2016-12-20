@@ -21,7 +21,7 @@ void coutChangedData(Element* element)
 	std::cout << std::endl;
 }
 
-void pltTSDensity2File(Element* element, int time)//输出一个文件，供Unity使用
+void pltTSDensity2FileforUnity(Element* element, int time)//输出一个文件，供Unity使用
 {
 	char tempChar[15];
 	sprintf_s(tempChar, "%d", time);
@@ -38,74 +38,20 @@ void pltTSDensity2File(Element* element, int time)//输出一个文件，供Unity使用
 
 }
 
-void pltTSDensity2File2(Element* element, double t)
+void pltTSDensity2FileforTecplot(Element* element, int time, double t)//输出一个文件，已做车道平均
 {
 	char tempChar[15];
-	sprintf_s(tempChar, "%f", t);//将double型转化为string型的关键步骤，%f表示double型
-	string tempString = tempChar;
-	string outfileName1 = ".\\out\\pltRho";
-	outfileName1 = outfileName1 + tempString + "_1.plt";
-	ofstream fileDensity1(outfileName1);
+	sprintf_s(tempChar, "%d", time);
+	string timeString = tempChar;
 
-	for (int i = 0; i < N1; i++)
-	{
-		fileDensity1 << i << " " << element[i].density / element[i].laneN << endl;
-	}
-
-	fileDensity1.close();
-
-	string outfileName2 = ".\\out\\pltRho";
-	outfileName2 = outfileName2 + tempString + "_2.plt";
-	ofstream fileDensity2(outfileName2);
-
-	for (int i = N1; i < N1 + N2; i++)
-	{
-		fileDensity2 << i - N1 << " " << element[i].density / element[i].laneN << endl;
-	}
-
-	fileDensity2.close();
-
-	string outfileName3 = ".\\out\\pltRho";
-	outfileName3 = outfileName3 + tempString + "_3.plt";
-	ofstream fileDensity3(outfileName3);
-
-	for (int i = N1 + N2; i < N; i++)
-	{
-		fileDensity3 << i - N1 - N2 << " " << element[i].density / element[i].laneN << endl;
-	}
-
-	fileDensity3.close();
-
-}
-
-void pltTSDensity2File3(Element* element, double t)//每条路输出一个文件，已做车道平均
-{
-
-	ofstream fileDensity1(".\\out\\densityRoad1.plt", ios_base::app);// ios_base::app表示如果有这个文件则在文件尾追加 如果没有则创建
+	ofstream fileDensity1(".\\out\\densityRoad"+ timeString+".plt", ios_base::app);// ios_base::app表示如果有这个文件则在文件尾追加 如果没有则创建
 
 	fileDensity1 << "          zone t=    \"" << t << "\"" << endl;
-	for (int i = 0; i < N1; i++)
+	for (int i = 0; i < N; i++)
 	{
 		fileDensity1 << i << " " << element[i].density / element[i].laneN << endl;
 	}
 	fileDensity1.close();
-
-
-	ofstream fileDensity2(".\\out\\densityRoad2.plt", ios_base::app);// ios_base::app表示如果有这个文件则在文件尾追加 如果没有则创建
-	fileDensity2 << "          zone t=    \"" << t << "\"" << endl;
-	for (int i = N1; i < N1 + N2; i++)
-	{
-		fileDensity2 << i - N1 << " " << element[i].density / element[i].laneN << endl;
-	}
-	fileDensity2.close();
-
-	ofstream fileDensity3(".\\out\\densityRoad3.plt", ios_base::app);// ios_base::app表示如果有这个文件则在文件尾追加 如果没有则创建
-	fileDensity3 << "          zone t=    \"" << t << "\"" << endl;
-	for (int i = N1 + N2; i < N; i++)
-	{
-		fileDensity3 << i - N1 - N2 << " " << element[i].density / element[i].laneN << endl;
-	}
-	fileDensity3.close();
 }
 
 void pltGridPosition2File(Element* element)
