@@ -124,7 +124,7 @@ void ini(Element* element, int UorD)
 			x0 = element[i].getValueX() - (Length11 + Length12);
 			element[i].setValueXY(x0*cos(alpha2) + x2, x0*sin(alpha2) + y2);
 		}
-		else if (i < N1 + N21)//第一个分叉
+		else if (i < N1 + N21)
 		{
 			x0 = element[i].getValueX() - Length1;
 			element[i].setValueXY(x0*cos(alpha3) + x3, x0*sin(alpha3) + y3);
@@ -156,19 +156,28 @@ void updateFlux(Element *element)
 	{
 		if (element[i].flag == 0)//进口边界网格、要改成固定边界条件
 		{
-			element[i].flux = FGLaneN(element[i].density, element[element[i].EOut[0]].density, element[i].laneN);//Godunov数值流通量
+			element[i].flux = FGLaneN(element[i].omega, element[element[i].EOut[0]].omega, element[i].laneN);//Godunov数值流通量
 			element[element[i].EOut[0]].flowIn = element[i].flux;
-			element[i].flowIn = FGLaneN(boundryDensity*element[i].laneN, element[i].density, element[i].laneN);//固定边界条件的Godunov数值流通量
+			element[i].flowIn = FGLaneN(iniOmega(boundryDensity*element[i].laneN, element[i].laneN), element[i].omega, element[i].laneN);//固定边界条件的Godunov数值流通量
+/*			double d = demandN(iniOmega(boundryDensity*element[i].laneN, element[i].laneN), element[i].laneN);
+			double s = supplyN(element[i].omega, element[i].laneN);
+			element[i].flowIn = std::min(d, s);
+			
+			d = demandN(element[i].omega, element[i].laneN);
+			s = supplyN(element[element[i].EOut[0]].omega, element[element[i].EOut[0]].laneN);
+			element[i].flux = std::min(d, s);
+			element[element[i].EOut[0]].flowIn = element[i].flux;
+*/
 		}
 		else if (element[i].flag == 1)//出口边界网格
 		{
-			element[i].flux = FGLaneN(element[i].density, element[i].density, element[i].laneN);//自然边界条件的Godunov数值流通量
+			element[i].flux = FGLaneN(element[i].omega, element[i].omega, element[i].laneN);//自然边界条件的Godunov数值流通量
 		}
 		else if (element[i].flag == 2)//分岔口网格
 		{
-			double d = demandN(element[i].density, element[i].laneN);
-			double s0 = supplyN(element[element[i].EOut[0]].density, element[element[i].EOut[0]].laneN);
-			double s1 = supplyN(element[element[i].EOut[1]].density, element[element[i].EOut[1]].laneN);
+			double d = demandN(element[i].omega, element[i].laneN);
+			double s0 = supplyN(element[element[i].EOut[0]].omega, element[element[i].EOut[0]].laneN);
+			double s1 = supplyN(element[element[i].EOut[1]].omega, element[element[i].EOut[1]].laneN);
 			element[i].flux = std::min(std::min(d, s0 / RateFlowDiverge), s1 / (1 - RateFlowDiverge));
 			element[element[i].EOut[0]].flowIn = RateFlowDiverge*element[i].flux;
 			element[element[i].EOut[1]].flowIn = (1 - RateFlowDiverge)*element[i].flux;
@@ -176,9 +185,9 @@ void updateFlux(Element *element)
 		}
 		else//一般网格
 		{
-			double d = demandN(element[i].density, element[i].laneN);
-			double s = supplyN(element[element[i].EOut[0]].density, element[element[i].EOut[0]].laneN);
-			element[i].flux = std::min(d, s);//FGLaneN(element[i].density, element[element[i].EOut[0]].density, element[i].laneN);//Godunov数值流通量
+			double d = demandN(element[i].omega, element[i].laneN);
+			double s = supplyN(element[element[i].EOut[0]].omega, element[element[i].EOut[0]].laneN);
+			element[i].flux = std::min(d, s);
 			element[element[i].EOut[0]].flowIn = element[i].flux;
 		}
 	}
@@ -237,7 +246,7 @@ void updateST(Element* element, double t, int UorD)//改成右端项,移项合并而来
 	for (int i = 0; i < NI; i++)
 	{
 		int iNE = int(NIx[i] / Det_x)*(1 - UorD) + int(NIDx[i] / Det_x)*UorD;
-		element[iNE].rampIn = cal_g(t)*0.2*densityJam*element[i].laneN*(1 - element[i].density / (densityJam*element[i].laneN));
+		element[iNE].rampIn = cal_g(t)*0.1*densityJam*element[i].laneN*(1 - element[i].density / (densityJam*element[i].laneN));
 	}
 	for (int i = 0; i < NO; i++)
 	{
@@ -253,20 +262,43 @@ void updateElement(Element *element, double t, int UorD)
 	updateFlux(element);//更新流量
 	updateST(element, t, UorD);//更新源项
 
-	det_t = 1;//CFL_Det_t(element);//根据CFL条件求最大允许时间步
+	det_t = 0.8;//CFL_Det_t(element);//根据CFL条件求最大允许时间步
 	if (!det_t)
 	{
 		printf("-----------delta_t = 0，程序终止-----------\n");
 		system("pause");
 	}
+	for (int i = 0; i < N; i++)//更新omega
+	{
+		element[i].omega = element[i].omega + det_t / Det_x*(element[i].flowIn - element[i].flux)
+			+ det_t*((VLaneN(element[i].omega, element[i].laneN) - veLaneN(element[i].density, element[i].laneN)) / beta);
+	}
+
 	if (t - 5 * floor(t / 5.0) <= 1)//时间函数，使收费站处流量强行为0
 	{
 		Fb(element, UorD);
-//		printf("%f\n", t);		
+		//		printf("%f\n", t);		
 	}
-	for (int i = 0; i < N; i++)
+
+	if (UorD)//更新density
 	{
-		element[i].density = element[i].density + det_t / Det_x*(element[i].flowIn - element[i].flux) + det_t*(element[i].rampIn - element[i].rampOut);
+		for (int i = 0; i < N - 1; i++)
+		{
+			element[i].density = element[i].density + det_t / Det_x*(element[i + 1].density / element[i + 1].omega*element[i].flowIn
+				- element[i].density / element[i].omega*element[i].flux) + det_t*(element[i].rampIn - element[i].rampOut);
+		}
+		element[N - 1].density = element[N - 1].density + det_t / Det_x*(boundryDensity*element[N - 1].laneN / iniOmega(boundryDensity*element[N - 1].laneN, element[N - 1].laneN)*element[N - 1].flowIn
+			- element[N - 1].density / element[N - 1].omega*element[N - 1].flux) + det_t*(element[N - 1].rampIn - element[N - 1].rampOut);
+	}
+	else
+	{
+		element[0].density = element[0].density + det_t / Det_x*(boundryDensity*element[0].laneN / iniOmega(boundryDensity*element[0].laneN, element[0].laneN)*element[0].flowIn
+			- element[0].density / element[0].omega*element[0].flux) + det_t*(element[0].rampIn - element[0].rampOut);
+		for (int i = 1; i < N; i++)
+		{
+			element[i].density = element[i].density + det_t / Det_x*(element[i - 1].density / element[i - 1].omega*element[i].flowIn
+				- element[i].density / element[i].omega*element[i].flux) + det_t*(element[i].rampIn - element[i].rampOut);
+		}
 	}
 }
 
